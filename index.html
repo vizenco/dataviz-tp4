@@ -1,151 +1,130 @@
 <!DOCTYPE html>
 
 <head>
-  <meta charset="utf-8" />
-  <script src="https://d3js.org/d3.v6.min.js"></script>
+    <meta charset="utf-8" />
+    <script src="https://d3js.org/d3.v6.min.js"></script>
 
-  <style>
-    body {
-      margin: 0;
-      position: fixed;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      left: 0;
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    .tooltip {
-      color: #222;
-      background-color: #fff;
-      padding: 0.5em;
-      text-shadow: #f5f5f5 0 1px 0;
-      border-radius: 2px;
-      opacity: 0.9;
-      position: absolute;
-    }
-  </style>
+    <style>
+        body {
+            margin: 0;
+            position: fixed;
+            top: 0;
+            right: 1000000;
+            bottom: 200;
+            left: 0;
+        }
+    </style>
 </head>
 
 <body id="arcviz">
-  <script>
-    const data = {
-      nodes: [
-        {
-          id: 1,
-          name: "A"
-        },
-        {
-          id: 2,
-          name: "B"
-        },
-        {
-          id: 5,
-          name: "E"
-        }
-      ],
-      links: [
-        {
-          source: 1,
-          target: 2
-        },
-        {
-          source: 1,
-          target: 5
-        }
-      ]
-    };
+    <script>
 
-    const margin = { top: 0, right: 30, bottom: 20, left: 10 },
-      width = 450 - margin.left - margin.right,
-      height = 300 - margin.top - margin.bottom;
+        var jsonpath = "https://lyondataviz.github.io/teaching/lyon1-m2/2020/data/data_network.json"
 
-    var svg = d3
-      .select("#arcviz")
-      .append("svg")
-      .attr("width", width + margin.left + margin.right)
-      .attr("height", height + margin.top + margin.bottom)
-      .append("g")
-      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        // Definition de la taille du svg
+        const margin = { top: 0, right: 30, bottom: 20, left: 10 },
+            width = 450 - margin.left - margin.right,
+            height = 300 - margin.top - margin.bottom;
 
-    let allNodes = data.nodes.map((d) => {
-      return d.name;
-    });
-    let scale = d3.scalePoint().domain(allNodes).range([0, width]);
-    console.log(allNodes);
-    drawPoints(allNodes);
-    var idToNodeName = {};
-    data.nodes.forEach(function (n) {
-      idToNodeName[n.id] = n;
-    });
+        // ajout du svg à la 'div id="arcviz"' de page html
+        var svg = d3
+            .select("#arcviz")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    let links = data.links;
+        // List of node names
 
-    svg
-      .selectAll("#link")
-      .data(links)
-      .enter()
-      .append("path")
-      .attr("class", "normal")
-      .attr("d", (d) => {
-        let x1 = scale(idToNodeName[d.source].name),
-          x2 = scale(idToNodeName[d.target].name);
+        var allNodes1 = d3.json(jsonpath).then(function (d) {
+            let allNodes = d.nodes.map(function (d) { return d.name; });
 
-        return drawArc(x1, x2);
-      })
-      .style("fill", "none")
-      .attr("stroke", "black");
+            let scale = d3.scalePoint().domain(allNodes).range([0, width]);
 
-    function drawPoints(nodes) {
-      svg
-        .selectAll("g")
-        .data(nodes, (d) => {
-          return d;
-        })
-        .enter()
-        .append("circle")
-        .attr("cx", (d) => {
-          return scale(d);
-        })
-        .attr("cy", (d) => {
-          return height - 10;
-        })
-        .attr("r", 5)
-        .style("fill", "black");
+            let idToNodeName = {};
 
-      svg
-        .selectAll("text")
-        .data(nodes)
-        .enter()
-        .append("text")
-        .text((d) => d)
-        .attr("x", (d) => {
-          return scale(d) - 5 + "px";
-        })
-        .attr("y", (d) => {
-          return height + 10 + "px";
+            d.nodes.forEach(function (n) {
+                idToNodeName[n.id] = n;
+            });
+
+            svg
+                .selectAll("#link")
+                .data(d.links)
+                .enter()
+                .append("path")
+                .attr("class", (d) => {
+                    return idToNodeName[d.source].name+" "+idToNodeName[d.target].name
+                })
+                .attr("d", (d) => {
+                    let x1 = scale(idToNodeName[d.source].name);
+                    let x2 = scale(idToNodeName[d.target].name);
+                    return drawArc(x1, x2);
+                })
+                .style("fill", "none")
+                .attr("stroke", "black")
+                .attr("stroke-width","5px");
+
+            return [allNodes, scale]
         });
-    }
-    function drawArc(x1, x2) {
-      return [
-        "M",
-        x1,
-        height - 10, // the arc starts at the coordinate x=start, y=height-30 (where the starting node is)
-        "A", // A for elliptical arc
-        (x1 - x2) / 2,
-        ",", // coordinates of the inflexion point. Height of this point is proportional with start - end distance
-        (x1 - x2) / 2,
-        0,
-        0,
-        ",",
-        x1 < x2 ? 1 : 0,
-        x2,
-        ",",
-        height - 10
-      ].join(" ");
-    }
-  </script>
+
+        allNodes1.then(([data, scale]) => {
+            drawPoints(data, scale)
+        })
+
+
+
+        function drawPoints(nodes, scale) {
+            svg
+                .selectAll("g")
+                .data(nodes)
+                .enter()
+                .append("circle")
+                .attr("cx", (d) => {
+                    return scale(d);
+                })
+                .attr("cy", height - 10)
+                .attr("r", 5)
+                .style("fill", "black")
+
+                .on("mouseover", function (event, d) {
+                    svg.selectAll("."+d).attr("stroke", "green")
+                })
+                .on("mouseout", (event, d) => {
+                    svg.selectAll("."+d).attr("stroke", "black")
+                })
+
+            svg
+                .selectAll("text")
+                .data(nodes)
+                .enter()
+                .append("text")
+                .attr("x", (d) => {
+                    return scale(d) - 5 + "px";
+                })
+                .attr("y", (d) => {
+                    return height + 10 + "px";
+                })
+                .text((d) => d);
+        }
+
+        function drawArc(x1, x2) {
+            return [
+                "M",
+                x1,
+                height - 10, // the arc starts at the coordinate x=start, y=height-30 (where the starting node is)
+                "A", // A for elliptical arc
+                (x1 - x2) / 2,
+                ",", // coordinates of the inflexion point. Height of this point is proportional with start - end distance
+                (x1 - x2) / 2,
+                0,
+                0,
+                ",",
+                x1 < x2 ? 1 : 0,
+                x2,
+                ",",
+                height - 10
+            ].join(" ");
+        }
+    </script>
 </body>
