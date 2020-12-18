@@ -246,13 +246,23 @@
       })
     
     }
-    // Tri de liste
-    function sortedList(list) {
-      return list.sort(function (a, b) {
-        var aa = a.split("/").reverse().join(),
-          bb = b.split("/").reverse().join();
-        return aa < bb ? -1 : aa > bb ? 1 : 0;
-      });
+    function drawArc(x1, x2) {
+      return [
+        "M" ,
+        x1,
+        height - 10, // the arc starts at the coordinate x=start, y=height-30 (where the starting node is)
+        "A", // A for elliptical arc
+        (x1 - x2) / 2,
+        ",", // coordinates of the inflexion point. Height of this point is proportional with start - end distance
+        (x1 - x2) / 2,
+        0,
+        0,
+        ",",
+        x1 < x2 ? 1 : 0,
+        x2,
+        ",",
+        height - 10
+      ].join(" ");
     }
   </script>
 </body>
